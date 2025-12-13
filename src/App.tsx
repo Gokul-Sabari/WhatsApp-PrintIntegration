@@ -53,8 +53,14 @@ function App() {
       />
       <Router>
         <Routes>
-          <Route path="/" element={<InvoiceView />} />
+          {/* For query parameters: /invoice?invoiceNumber=INV123 */}
+          <Route path="/invoice" element={<InvoiceView />} />
+          
+          {/* For path parameters: /invoice/INV123 */}
           <Route path="/invoice/:invoiceNo" element={<InvoiceView />} />
+          
+          {/* Default route */}
+          <Route path="/" element={<div>Home Page - Enter Invoice Number</div>} />
         </Routes>
       </Router>
     </ThemeProvider>

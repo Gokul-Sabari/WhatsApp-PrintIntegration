@@ -9,24 +9,23 @@ const api = axios.create({
   },
 });
 
-// Invoice APIs - only what you need
 export const invoiceApi = {
-  // Get invoice by invoice number - THIS IS WHAT YOU NEED
-  getInvoiceByNumber: (invoiceNo: string) => api.get(`/invoices/number/${invoiceNo}`),
+
+  getInvoiceByNumber: (invoiceNo: string) => api.get(`/sales/invoicesNumber?So_Inv_No=${invoiceNo}`),
   
-  // Create new invoice (if you need to save before printing)
+ 
   createInvoice: (invoiceData: any) => api.post('/invoices', invoiceData),
   
-  // Print invoice (optional - if you want to track prints)
+ 
   printInvoice: (id: string) => api.post(`/invoices/${id}/print`),
 };
 
-// Company APIs (for company info in the print)
+
 export const companyApi = {
   getCompanyInfo: () => api.get('/company'),
 };
 
-// Interceptors for handling errors
+
 api.interceptors.response.use(
   (response: any) => response,
   (error: { response: { data: any; }; message: any; }) => {

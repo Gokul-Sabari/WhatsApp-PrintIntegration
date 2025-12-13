@@ -35,6 +35,7 @@ const PrintInvoice = () => {
   const loadInvoiceData = async (invNo) => {
     try {
       const data = await fetchInvoiceData(invNo)
+      console.log("Data",data)
       setInvoiceData(data)
     } catch (err) {
       setError(err.message || 'Failed to load invoice')
@@ -59,7 +60,7 @@ const PrintInvoice = () => {
   // Handle print dialog events
   useEffect(() => {
     const handleAfterPrint = () => {
-      // Redirect back after print
+     
       setTimeout(() => {
         if (window.history.length > 1) {
           window.history.back()
