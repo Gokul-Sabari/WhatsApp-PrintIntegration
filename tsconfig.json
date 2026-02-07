@@ -19,10 +19,6 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     
-    // Remove baseUrl or keep it with ignoreDeprecations
-    "ignoreDeprecations": "6.0",
-    
-    // If you need path mapping, use this instead:
     "paths": {
       "@/*": ["./src/*"]
     }
