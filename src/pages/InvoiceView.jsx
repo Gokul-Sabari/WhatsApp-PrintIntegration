@@ -30,21 +30,21 @@ const taxCalc = (method = 1, amount = 0, percentage = 0) => {
       return 0;
   }
 }
-// Add this inside your component, before the return statement
+
 const PrintableContent = React.forwardRef(({ printData, invoiceData, includedProducts, calculateTotalBags, IS_IGST }, ref) => {
   if (!printData) return null;
   
   return (
     <div style={{ display: 'none' }}>
       <div ref={ref} style={{ 
-        // width: "100mm",
+
         fontFamily: "Courier New, monospace",
         fontSize: "13px",
         padding: "3mm", 
         lineHeight: 1.4,
         color: "#000",
         fontWeight: "bold",
-        // margin: "0 auto",
+
         backgroundColor: "white"
       }}>
     
@@ -156,14 +156,13 @@ const InvoiceView = () => {
     }
   };
 
- // Replace the existing handleReactPrint declaration with this:
 const handleReactPrint = useReactToPrint({
   content: () => printRef.current,
   documentTitle: `Invoice_${atob(invoiceNo)}`,
   onBeforeGetContent: () => {
     setIsPrinting(true);
     return new Promise((resolve) => {
-      // Ensure content is fully rendered
+
       setTimeout(() => {
         resolve();
       }, 200);
@@ -213,13 +212,13 @@ const handleReactPrint = useReactToPrint({
     }
   };
 
-  // Handle actual print (opens print dialog)
+
   const handleActualPrint = async () => {
     setIsPrinting(true);
     try {
       const result = await handlePrintAndSave();
       if (result) {
-        // Small delay to ensure content is ready
+        
         setTimeout(() => {
           handleReactPrint();
         }, 100);
@@ -231,11 +230,11 @@ const handleReactPrint = useReactToPrint({
     }
   };
 
-  // Handle reprint
+
   const handleReprintPrint = async () => {
     setIsPrinting(true);
     try {
-      // For reprint, just open print dialog without saving status
+      
       setTimeout(() => {
         handleReactPrint();
       }, 100);
@@ -247,11 +246,11 @@ const handleReactPrint = useReactToPrint({
   };
 
   useEffect(() => {
-    if (!invoiceNo) {
-      setError("No invoice number provided");
-      setLoading(false);
-      return;
-    }
+    // if (!invoiceNo) {
+    //   setError("No invoice number provided");
+    //   setLoading(false);
+    //   return;
+    // }
 
     const fetchInvoiceData = async () => {
       try {
@@ -288,16 +287,16 @@ const handleReactPrint = useReactToPrint({
     fetchInvoiceData();
   }, [invoiceNo]);
 
-  // Effect for auto-download - runs only once when data is loaded
-  useEffect(() => {
-    if (invoiceData && companyInfo && !hasAutoDownloaded && !loading) {
-      const timer = setTimeout(() => {
-        generatePDF(true);
-      }, 1000);
+
+  // useEffect(() => {
+  //   if (invoiceData && companyInfo && !hasAutoDownloaded && !loading) {
+  //     const timer = setTimeout(() => {
+  //       generatePDF(true);
+  //     }, 1000);
       
-      return () => clearTimeout(timer);
-    }
-  }, [invoiceData, companyInfo, hasAutoDownloaded, loading]);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [invoiceData, companyInfo, hasAutoDownloaded, loading]);
 
   const preparePrintData = () => {
     if (!invoiceData || !companyInfo) return null;
@@ -338,7 +337,7 @@ const handleReactPrint = useReactToPrint({
     };
   };
 
-  // Calculate bags from product name (extracts weight from product name)
+
   const calculateBags = (productName, totalQtyInKG) => {
     if (!productName || !totalQtyInKG) return totalQtyInKG;
     
@@ -354,14 +353,14 @@ const handleReactPrint = useReactToPrint({
     return totalQtyInKG;
   };
 
-  // Extract bag weight from product name
+
   const extractBagWeight = (productName) => {
     if (!productName) return null;
     const matches = productName.match(/(\d+)\s*KG/i);
     return matches && matches[1] ? parseInt(matches[1]) : null;
   };
 
-  // Calculate total bags for all products
+
   const calculateTotalBags = () => {
     if (!invoiceData?.Products_List) return 0;
     
@@ -442,466 +441,7 @@ const handleReactPrint = useReactToPrint({
   return (
     <>
       <div maxWidth="sm">
-        <Dialog 
-          open={modalOpen} 
-          onClose={() => setModalOpen(false)} 
-          maxWidth="sm"
-          fullWidth
-          PaperProps={{
-            sx: {
-              maxHeight: '90vh',
-              overflow: 'hidden'
-            }
-          }}
-        >
-          <DialogTitle>
-            {isReprint ? 'Reprint Invoice' : 'Invoice Preview'}
-            {hasAutoDownloaded && !isReprint && (
-              <Typography variant="caption" display="block" color="success.main">
-                PDF auto-downloaded!
-              </Typography>
-            )}
-            {isPrinting && !hasAutoDownloaded && (
-              <Typography variant="caption" display="block" color="primary">
-                Auto-downloading PDF...
-              </Typography>
-            )}
-          </DialogTitle>
-          
-          <DialogContent sx={{ overflow: 'auto' }}>
-            <div
-              ref={printRef}
-              style={{
-                width: "80mm",
-                fontFamily: "Courier New, monospace",
-                fontSize: "13px",
-                padding: "3mm", 
-                lineHeight: 1.4,
-                color: "#000",
-                fontWeight: "bold",
-                margin: "0 auto",
-                backgroundColor: "white"
-              }}
-            >
-              {/* Invoice Content - same as before */}
-              <div style={{ 
-                textAlign: "center", 
-                fontWeight: "950", 
-                borderBottom: "3px solid #000",
-                marginBottom: "4mm", 
-                fontSize: "18px", 
-                paddingBottom: "3mm",
-                textTransform: "uppercase",
-                letterSpacing: "1px"
-              }}>
-                INVOICE
-              </div>
-
-              <div style={{ 
-                display: "flex", 
-                justifyContent: "space-between", 
-                marginBottom: "3mm", 
-                minHeight: "5mm", 
-                borderBottom: "2px solid #000",
-                paddingBottom: "2mm",
-                fontWeight: "950",
-                fontSize: "12px" 
-              }}>
-                <div><strong>INVOICE_NO:</strong> {atob(invoiceNo) || "—"}</div>
-                <div><strong>DATE:</strong> {new Date(printData?.invoiceDate || new Date()).toLocaleDateString("en-GB")}</div>
-              </div>
-
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                marginBottom: "3mm", 
-                minHeight: "5mm",
-                fontWeight: "950",
-              }}>
-                <span style={{ 
-                  minWidth: "20mm", 
-                  fontWeight: 950,
-                  marginRight: "2mm", 
-                  fontSize: "12px"
-                }}>CUSTOMER:</span>
-                <div style={{ 
-                  flex: 1, 
-                  fontSize: "13px", 
-                  fontWeight: "950"
-                }}>{printData.customer.name || "—"}</div>
-              </div>
-
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                marginBottom: "3mm", 
-                minHeight: "5mm",
-                fontWeight: "950"
-              }}>
-                <span style={{ 
-                  minWidth: "20mm", 
-                  fontWeight: 950, 
-                  marginRight: "2mm", 
-                  fontSize: "12px" 
-                }}>ADDRESS:</span>
-                <div style={{ 
-                  flex: 1, 
-                  fontSize: "12px",
-                  fontWeight: "850"
-                }}>
-                  {printData.customer.address}, {printData.customer.city} - {printData.customer.pincode}
-                </div>
-              </div>
-
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                marginBottom: "3mm", 
-                minHeight: "5mm",
-                fontWeight: "950"
-              }}>
-                <span style={{ 
-                  minWidth: "20mm", 
-                  fontWeight: 950, 
-                  marginRight: "2mm", 
-                  fontSize: "12px" 
-                }}>MOBILE:</span>
-                <div style={{ 
-                  flex: 1, 
-                  fontSize: "13px",
-                  fontWeight: "950"
-                }}>{printData.customer.mobile || "—"}</div>
-              </div>
-
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                marginBottom: "3mm", 
-                minHeight: "5mm",
-                fontWeight: "950"
-              }}>
-                <span style={{ 
-                  minWidth: "20mm", 
-                  fontWeight: 950, 
-                  marginRight: "2mm", 
-                  fontSize: "12px" 
-                }}>GSTIN:</span>
-                <div style={{ 
-                  flex: 1, 
-                  fontSize: "12px",
-                  fontWeight: "850"
-                }}>{printData.customer.gst || "—"}</div>
-              </div>
-
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                marginBottom: "4mm", 
-                minHeight: "5mm",
-                fontWeight: "950",
-                borderBottom: "2px solid #000",
-                paddingBottom: "2mm"
-              }}>
-                <span style={{ 
-                  minWidth: "20mm", 
-                  fontWeight: 950, 
-                  marginRight: "2mm", 
-                  fontSize: "12px" 
-                }}>STATE:</span>
-                <div style={{ 
-                  flex: 1, 
-                  fontSize: "12px",
-                  fontWeight: "850"
-                }}>{printData.customer.state || "—"}</div>
-              </div>
-
-              <table style={{ 
-                width: "100%", 
-                borderCollapse: "collapse", 
-                marginTop: "4mm", 
-                border: "3px solid #000", 
-                fontSize: "12px", 
-                fontWeight: "950" 
-              }}>
-                <thead>
-                  <tr>
-                    <th style={{ 
-                      width: "15%",
-                      border: "2px solid #000", 
-                      padding: "1mm",
-                      background: "#e0e0e0",
-                      fontWeight: "950",
-                      fontSize: "11px",
-                      height: "6mm",
-                      textTransform: "uppercase"
-                    }}>RATE</th>
-                    <th style={{ 
-                      width: "45%",
-                      border: "2px solid #000", 
-                      padding: "1mm",
-                      background: "#e0e0e0",
-                      fontWeight: "950",
-                      fontSize: "11px",
-                      height: "6mm",
-                      textTransform: "uppercase"
-                    }}>ITEM</th>
-                    <th style={{ 
-                      width: "15%",
-                      border: "2px solid #000", 
-                      padding: "1mm",
-                      background: "#e0e0e0",
-                      fontWeight: "950",
-                      fontSize: "11px",
-                      height: "6mm",
-                      textTransform: "uppercase"
-                    }}>BAGS</th>
-                    <th style={{ 
-                      width: "15%",
-                      border: "2px solid #000", 
-                      padding: "1mm",
-                      background: "#e0e0e0",
-                      fontWeight: "950",
-                      fontSize: "11px",
-                      height: "6mm",
-                      textTransform: "uppercase"
-                    }}>AMOUNT</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {includedProducts && includedProducts.length > 0 ? (
-                    includedProducts.map((item, i) => {
-                      const percentage = (IS_IGST ? item?.Igst_P : (Number(item?.Cgst) + Number(item?.Sgst))) || 0;
-                      const quantity = Number(item?.Bill_Qty || 0);
-                      const Item_Rate = Number(item?.Item_Rate || 0);
-                      const itemTax = taxCalc(invoiceData?.GST_Inclusive, Item_Rate, percentage);
-                      const bagWeight = extractBagWeight(item?.Product_Name);
-                      const numberOfBags = bagWeight && quantity > 0 ? calculateBags(item?.Product_Name, quantity) : quantity;
-                      
-                      return (
-                        <tr key={i} style={{ height: "6mm", fontWeight: "950" }}>
-                          <td style={{ 
-                            border: "2px solid #000", 
-                            textAlign: "right", 
-                            padding: "1mm",
-                            fontWeight: "950",
-                            fontSize: "11px"
-                          }}>
-                            {NumberFormat(isEqualNumber(invoiceData?.GST_Inclusive, 1) ? (Item_Rate - itemTax) : Item_Rate)}
-                          </td>
-                          <td style={{ 
-                            border: "2px solid #000", 
-                            padding: "1mm",
-                            fontWeight: "950",
-                            fontSize: "11px"
-                          }}>{item?.Product_Name}</td>
-                          <td style={{ 
-                            border: "2px solid #000", 
-                            textAlign: "center", 
-                            padding: "1mm",
-                            fontWeight: "950",
-                            fontSize: "11px"
-                          }}>
-                            {typeof numberOfBags === 'number' ? numberOfBags.toFixed(1) : numberOfBags}
-                          </td>
-                          <td style={{ 
-                            border: "2px solid #000", 
-                            textAlign: "right", 
-                            padding: "1mm",
-                            fontWeight: "950",
-                            fontSize: "11px"
-                          }}>
-                            {NumberFormat(item?.Taxable_Amount)}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    Array.from({ length: 8 }).map((_, i) => (
-                      <tr key={i} style={{ height: "6mm" }}>
-                        <td style={{ border: "2px solid #000", height: "6mm" }}></td>
-                        <td style={{ border: "2px solid #000", height: "6mm" }}></td>
-                        <td style={{ border: "2px solid #000", height: "6mm" }}></td>
-                        <td style={{ border: "2px solid #000", height: "6mm" }}></td>
-                      </tr>
-                    ))
-                  )}
-                  
-                  {/* Total Row */}
-                  <tr style={{ 
-                    fontWeight: "950", 
-                    background: "#d0d0d0", 
-                    borderTop: "3px solid #000" 
-                  }}>
-                    <td colSpan="2" style={{ 
-                      border: "2px solid #000", 
-                      textAlign: "left",
-                      padding: "1mm",
-                      fontWeight: "950",
-                      fontSize: "11px"
-                    }}>
-                      <strong>TOTAL:</strong>
-                    </td>
-                    <td style={{ 
-                      border: "2px solid #000", 
-                      textAlign: "center",
-                      padding: "1mm",
-                      fontWeight: "950",
-                      fontSize: "11px"
-                    }}>
-                      <strong>
-                        {calculateTotalBags().toFixed(1)}
-                      </strong>
-                    </td>
-                    <td style={{ 
-                      border: "2px solid #000", 
-                      textAlign: "right",
-                      padding: "1mm",
-                      fontWeight: "950",
-                      fontSize: "11px"
-                    }}>
-                      <strong>₹{NumberFormat(invoiceData?.Total_Before_Tax || 0)}</strong>
-                    </td>
-                  </tr>
-
-                  {/* Tax Rows */}
-                  {!IS_IGST ? (
-                    <>
-                      <tr style={{ fontWeight: "950" }}>
-                        <td colSpan="3" style={{ 
-                          border: "2px solid #000", 
-                          textAlign: "right",
-                          padding: "1mm",
-                          fontSize: "11px"
-                        }}>
-                          <strong>CGST:</strong>
-                        </td>
-                        <td style={{ 
-                          border: "2px solid #000", 
-                          textAlign: "right",
-                          padding: "1mm",
-                          fontSize: "11px"
-                        }}>
-                          {NumberFormat(invoiceData?.CSGT_Total || 0)}
-                        </td>
-                      </tr>
-                      <tr style={{ fontWeight: "950" }}>
-                        <td colSpan="3" style={{ 
-                          border: "2px solid #000", 
-                          textAlign: "right",
-                          padding: "1mm",
-                          fontSize: "11px"
-                        }}>
-                          <strong>SGST:</strong>
-                        </td>
-                        <td style={{ 
-                          border: "2px solid #000", 
-                          textAlign: "right",
-                          padding: "1mm",
-                          fontSize: "11px"
-                        }}>
-                          {NumberFormat(invoiceData?.SGST_Total || 0)}
-                        </td>
-                      </tr>
-                    </>
-                  ) : (
-                    <tr style={{ fontWeight: "950" }}>
-                      <td colSpan="3" style={{ 
-                        border: "2px solid #000", 
-                        textAlign: "right",
-                        padding: "1mm",
-                        fontSize: "11px"
-                      }}>
-                        <strong>IGST:</strong>
-                      </td>
-                      <td style={{ 
-                        border: "2px solid #000", 
-                        textAlign: "right",
-                        padding: "1mm",
-                        fontSize: "11px"
-                      }}>
-                        {NumberFormat(invoiceData?.IGST_Total || 0)}
-                      </td>
-                    </tr>
-                  )}
-
-                  {/* Round Off */}
-                  <tr style={{ fontWeight: "950" }}>
-                    <td colSpan="3" style={{ 
-                      border: "2px solid #000", 
-                      textAlign: "right",
-                      padding: "1mm",
-                      fontSize: "11px"
-                    }}>
-                      <strong>ROUND OFF:</strong>
-                    </td>
-                    <td style={{ 
-                      border: "2px solid #000", 
-                      textAlign: "right",
-                      padding: "1mm",
-                      fontSize: "11px"
-                    }}>
-                      {NumberFormat(invoiceData?.Round_off || 0)}
-                    </td>
-                  </tr>
-
-                  {/* Grand Total */}
-                  <tr style={{ 
-                    fontWeight: "950", 
-                    background: "#c0c0c0", 
-                    borderTop: "2px solid #000" 
-                  }}>
-                    <td colSpan="3" style={{ 
-                      border: "2px solid #000", 
-                      textAlign: "right",
-                      padding: "1mm",
-                      fontSize: "12px"
-                    }}>
-                      <strong>GRAND TOTAL:</strong>
-                    </td>
-                    <td style={{ 
-                      border: "2px solid #000", 
-                      textAlign: "right",
-                      padding: "1mm",
-                      fontSize: "12px"
-                    }}>
-                      <strong>₹{NumberFormat(invoiceData?.Total_Invoice_value || 0)}</strong>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </DialogContent>
-          
-          <DialogActions>
-            <Button 
-              onClick={() => setModalOpen(false)} 
-              variant="outlined"
-              startIcon={<Close />}
-              disabled={isPrinting}
-            >
-              Close
-            </Button>
-            <Button 
-              variant="contained" 
-              onClick={handleManualPDFDownload} 
-              disabled={isPrinting}
-              startIcon={<Download />}
-              style={{ fontWeight: "bold" }}
-            >
-              {isPrinting ? 'Downloading...' : 'Download PDF'}
-            </Button>
-            <Button 
-              variant="contained" 
-              color="secondary"
-              onClick={isReprint ? handleReprintPrint : handleActualPrint}
-              disabled={isPrinting}
-              startIcon={<Print />}
-              style={{ fontWeight: "bold" }}
-            >
-              {isPrinting ? 'Processing...' : (isReprint ? 'Reprint' : 'Print')}
-            </Button>
-          </DialogActions>
-        </Dialog>
+      
 
         {/* Rest of your existing UI */}
         <Paper elevation={3} sx={{ p: 3 }}>
@@ -932,7 +472,7 @@ const handleReactPrint = useReactToPrint({
               
               <Box sx={{ mt: 4 }}>
                 <Typography variant="h6">Items</Typography>
-                {printData.Products_List && printData.Products_List.map((item, index) => {
+                {printData.DeliveryItems && printData.DeliveryItems.map((item, index) => {
                   const bagWeight = extractBagWeight(item.Product_Name);
                   const numberOfBags = bagWeight && item.Bill_Qty > 0 ? calculateBags(item.Product_Name, item.Bill_Qty) : item.Bill_Qty;
                   
@@ -968,7 +508,7 @@ const handleReactPrint = useReactToPrint({
             </>
           )}
           
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 4 }}>
+          {/* <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 4 }}>
             <Button variant="contained" onClick={handlePrintClick}>
               Print Invoice
             </Button>
@@ -978,7 +518,7 @@ const handleReactPrint = useReactToPrint({
             <Button variant="contained" color="success" onClick={handleManualPDFDownload}>
               Download PDF
             </Button>
-          </Box>
+          </Box> */}
         </Paper>
       </div>
     </>

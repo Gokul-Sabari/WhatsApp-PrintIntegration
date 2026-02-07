@@ -11,7 +11,7 @@ const api = axios.create({
 
 export const invoiceApi = {
 
-  getInvoiceByNumber: (invoiceNo: string) => api.get(`/sales/invoicesNumber?So_Inv_No=${invoiceNo}`),
+  getInvoiceByNumber: (invoiceNo: string) => api.get(`/sales/invoicesNumber?Do_Inv_No=${invoiceNo}`),
   
  
   createInvoice: (invoiceData: any) => api.post('/invoices', invoiceData),
