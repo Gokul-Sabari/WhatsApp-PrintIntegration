@@ -259,10 +259,12 @@ const handleReactPrint = useReactToPrint({
 
         const decrypted = atob(invoiceNo);
         const response = await invoiceApi.getInvoiceByNumber(decrypted);
+     
         const invoice = response.data.data?.[0] || response.data;
         setInvoiceData(invoice);
 
         const companyResponse = await companyApi.getCompanyInfo();
+     
         setCompanyInfo(companyResponse.data?.data?.[0] || companyResponse.data || {});
 
         if (invoice.Retailer_Id) {

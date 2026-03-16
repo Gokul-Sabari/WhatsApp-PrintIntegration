@@ -1,12 +1,15 @@
 import axios from 'axios';
+// import {getCurrentAPI} from '../API'
+import apiData from '../../API';
+// const API_BASE_URL =  'http://localhost:9001/api';
 
-const API_BASE_URL =  'http://localhost:9001/api';
+const API_BASE_URL=apiData;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-  },
+  },   
 });
 
 export const invoiceApi = {
@@ -22,7 +25,7 @@ export const invoiceApi = {
 
 
 export const companyApi = {
-  getCompanyInfo: () => api.get('/company'),
+  getCompanyInfo: () => api.get('/masters/company'),
 };
 
 

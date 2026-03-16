@@ -2,8 +2,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material'
 import { ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
+// import 'react-toastify/dist/ReactToastify.css'
 import InvoiceView from './pages/InvoiceView'
+import DownloadPdfView from './pages/DownloadPdfView'
+
 
 const theme = createTheme({
   palette: {
@@ -59,6 +61,7 @@ function App() {
           {/* For path parameters: /invoice/INV123 */}
           <Route path="/invoice/:invoiceNo" element={<InvoiceView />} />
           
+          <Route path="/sales/downloadPdf" element={<DownloadPdfView />} />
           {/* Default route */}
           <Route path="/" element={<div>Home Page - Enter Invoice Number</div>} />
         </Routes>
