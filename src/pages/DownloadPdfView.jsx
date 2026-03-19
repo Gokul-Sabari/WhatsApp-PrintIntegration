@@ -552,7 +552,7 @@ useEffect(() => {
     return; 
   }
   
-  fetch(`https://pukalfods.eprmst.in/masters/company/url?Company_id=${Company}`)
+  fetch(`https://pukalfoods.erpsmt.in/api/masters/company/url?Company_id=${Company}`)
     .then(response => response.json())
     .then(data => {
       if (data.success && data.data) {
