@@ -35,7 +35,7 @@ const PrintInvoice = () => {
   const loadInvoiceData = async (invNo) => {
     try {
       const data = await fetchInvoiceData(invNo)
-      console.log("Data",data)
+      
       setInvoiceData(data)
     } catch (err) {
       setError(err.message || 'Failed to load invoice')

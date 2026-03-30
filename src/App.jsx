@@ -1,12 +1,13 @@
-// import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material'
-import { ToastContainer } from 'react-toastify'
-// import 'react-toastify/dist/ReactToastify.css'
-import InvoiceView from './pages/InvoiceView'
-import DownloadPdfView from './pages/DownloadPdfView'
+// App.js
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import InvoiceView from './pages/InvoiceView';
+import DownloadPdfView from './pages/DownloadPdfView';
 
-
+import RateMaster from './pages/RateMaster';
 const theme = createTheme({
   palette: {
     primary: {
@@ -36,7 +37,7 @@ const theme = createTheme({
   shape: {
     borderRadius: 8,
   },
-})
+});
 
 function App() {
   return (
@@ -55,19 +56,22 @@ function App() {
       />
       <Router>
         <Routes>
+ 
+          
           {/* For query parameters: /invoice?invoiceNumber=INV123 */}
           <Route path="/invoice" element={<InvoiceView />} />
           
           {/* For path parameters: /invoice/INV123 */}
-          <Route path="/invoice/:invoiceNo" element={<InvoiceView />} />
+           <Route path="/invoice/:invoiceNo" element={<InvoiceView />} />
+           <Route path="/rateMaster" element={<RateMaster />} />
           
           <Route path="/sales/downloadPdf" element={<DownloadPdfView />} />
-          {/* Default route */}
-          <Route path="/" element={<div>Home Page - Enter Invoice Number</div>} />
+          
+
         </Routes>
       </Router>
     </ThemeProvider>
-  )
+  );
 }
 
-export default App
+export default App;

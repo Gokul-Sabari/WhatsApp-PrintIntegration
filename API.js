@@ -1,5 +1,5 @@
-const { protocol, host } = window.location, api = `${protocol}//${host}/api/`;
-// const api = "https://pukalfoods.erpsmt.in/api/";
+// const { protocol, host } = window.location, api = `${protocol}//${host}/api/`;
+const api = "https://pukalfoods.erpsmt.in/api/";
 // const api="http://localhost:9001/api/"
 // // const api = "http://192.168.3.113:9001/api/";
 
