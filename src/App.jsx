@@ -6,6 +6,10 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import InvoiceView from './pages/InvoiceView';
 import DownloadPdfView from './pages/DownloadPdfView';
+import DownloadSalesOrder from './pages/DownloadSalesOrder';
+import StatementView from './pages/StatementView';
+import Pendingbills from './pages/Pendingbills';
+
 
 import RateMaster from './pages/RateMaster';
 const theme = createTheme({
@@ -43,7 +47,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
@@ -56,18 +60,19 @@ function App() {
       />
       <Router>
         <Routes>
- 
-          
+
+
           {/* For query parameters: /invoice?invoiceNumber=INV123 */}
           <Route path="/invoice" element={<InvoiceView />} />
-          
-          {/* For path parameters: /invoice/INV123 */}
-           <Route path="/invoice/:invoiceNo" element={<InvoiceView />} />
-           <Route path="/rateMaster" element={<RateMaster />} />
-          
-          <Route path="/sales/downloadPdf" element={<DownloadPdfView />} />
-          
 
+          {/* For path parameters: /invoice/INV123 */}
+          <Route path="/invoice/:invoiceNo" element={<InvoiceView />} />
+          <Route path="/rateMaster" element={<RateMaster />} />
+
+          <Route path="/sales/downloadPdf" element={<DownloadPdfView />} />
+          <Route path="/salesOrder/downloadPdf" element={<DownloadSalesOrder />} />
+          <Route path="/statement" element={<StatementView />} />
+          <Route path="/pendingbills" element={<Pendingbills />} />
         </Routes>
       </Router>
     </ThemeProvider>

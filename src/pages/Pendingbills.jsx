@@ -1,0 +1,509 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    Container, Paper, Typography, Box, CircularProgress,
+    Alert, Table, TableBody, TableCell, TableContainer,
+    TableHead, TableRow, Chip, Button, Tooltip
+} from '@mui/material';
+import { toast } from 'react-toastify';
+import { useLocation } from 'react-router-dom';
+import DownloadIcon from '@mui/icons-material/Download';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
+const CACHE = new Map();
+
+const Pendingbills = () => {
+    const location = useLocation();
+    const contentRef = useRef(null);
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [statementData, setStatementData] = useState([]);
+    const [decodedParams, setDecodedParams] = useState({});
+    const [downloading, setDownloading] = useState(false);
+    const [autoDownloadTriggered, setAutoDownloadTriggered] = useState(false);
+    const [companyInfo, setCompanyInfo] = useState(null);
+
+    // Calculate pending days
+    const calculatePendingDays = (eventDate) => {
+        if (!eventDate) return 0;
+        const eventDateObj = new Date(eventDate);
+        const currentDate = new Date();
+        eventDateObj.setHours(0, 0, 0, 0);
+        currentDate.setHours(0, 0, 0, 0);
+        const diffTime = currentDate - eventDateObj;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 0 ? diffDays : 0;
+    };
+
+    // Format date for display
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    };
+
+    // Format date for PDF (DD-MM-YYYY)
+    const formatDateForPDF = (dateString) => {
+        if (!dateString) return "-";
+        const dateOnly = dateString.split('T')[0];
+        const parts = dateOnly.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return dateOnly;
+    };
+
+    // Transform data to required format
+    const transformData = (data) => {
+        if (!Array.isArray(data)) return [];
+
+        return data.map(item => {
+            const voucherNumber = item.voucherNumber || item.VoucherNumber || item.Voucher_No || item.voucher_no || item.invoice_no || '-';
+            const dateValue = item.eventDate || item.Ledger_Date || item.Date || item.TransDate || item.TransactionDate;
+            const source = item.dataSource || item.Source || item.Source_Name || item.sourceName || item.Particulars || '-';
+            const total = item.totalValue || item.TotalValue || item.Total || item.total || item.Debit_Amt || 0;
+            const pending = item.BalanceAmount || item.balanceAmount || item.Pending || item.pending || item.Credit_Amt || 0;
+
+            return {
+                voucherNumber: voucherNumber,
+                date: dateValue,
+                formattedDate: formatDateForPDF(dateValue),
+                source: source,
+                pendingDays: calculatePendingDays(dateValue),
+                total: Number(total) || 0,
+                pending: Number(pending) || 0
+            };
+        });
+    };
+
+    // Format amount
+    const formatAmount = (amount) => {
+        const num = Number(amount) || 0;
+        if (num === 0) return "-";
+        return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    useEffect(() => {
+        const query = new URLSearchParams(location.search);
+        const encodedData = query.get('data');
+
+        if (!encodedData) {
+            setError('No data parameter provided in the URL.');
+            setLoading(false);
+            return;
+        }
+
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                const decoded = atob(encodedData);
+     
+
+                const params = new URLSearchParams(decoded);
+
+                const accId = params.get('Acc_Id') || '';
+                const fromDate = params.get('fromDate') || params.get('Fromdate') || params.get('FromDate') || '';
+                const toDate = params.get('toDate') || params.get('Todate') || params.get('ToDate') || '';
+                const companyIdFromParams = params.get('Company_id') || '';
+
+               
+
+                setDecodedParams({ Acc_Id: accId, Fromdate: fromDate, Todate: toDate });
+
+                if (!accId) {
+                    throw new Error('Missing Acc_Id in decoded parameters.');
+                }
+
+                // Fetch company info using companyId from decoded params
+                let compInfo = CACHE.get(`ci_${companyIdFromParams}`);
+                if (!compInfo && companyIdFromParams) {
+                    const r = await fetch(`https://pukalfoods.erpsmt.in/api/masters/company/url?Company_id=${companyIdFromParams}`);
+                    const d = await r.json();
+                  
+                    if (d.success && d.data) {
+                        compInfo = d.data;
+                        CACHE.set(`ci_${companyIdFromParams}`, compInfo);
+                        setCompanyInfo(compInfo);
+                    }
+                }
+
+                const base = compInfo?.Back_End_API ? compInfo.Back_End_API.replace(/\/+$/, '') : '';
+             
+
+                if (!base) {
+                    throw new Error('Could not determine API base URL');
+                }
+
+                const apiUrl = `${base}/journal/accountPendingReference?Acc_Id=${accId}&Fromdate=${fromDate}&Todate=${toDate}`;
+               
+
+                const response = await fetch(apiUrl);
+                const result = await response.json();
+     
+                const data = result?.data || result || [];
+                setStatementData(Array.isArray(data) ? data : [data]);
+
+            } catch (err) {
+                console.error('Error fetching statement:', err);
+                setError(err.message || 'Failed to load statement data');
+                toast.error('Failed to fetch statement data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [location.search]);
+
+    useEffect(() => {
+        if (!loading && statementData.length > 0 && !autoDownloadTriggered && contentRef.current) {
+            const timer = setTimeout(() => {
+                autoDownloadPDF();
+            }, 1500);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, statementData, autoDownloadTriggered]);
+
+    const transformedData = transformData(statementData);
+    const totalTotals = transformedData.reduce((sum, item) => sum + item.total, 0);
+    const totalPending = transformedData.reduce((sum, item) => sum + item.pending, 0);
+
+    const autoDownloadPDF = async () => {
+        if (!contentRef.current || autoDownloadTriggered) return;
+        setAutoDownloadTriggered(true);
+        setDownloading(true);
+        try {
+            await generatePDF();
+        } catch (err) {
+            console.error('Error generating PDF:', err);
+            toast.error('Failed to generate PDF');
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    const generatePDF = async () => {
+        const rowsPerPage = 20;
+        const totalPages = Math.ceil(transformedData.length / rowsPerPage);
+
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        for (let page = 0; page < totalPages; page++) {
+            if (page > 0) {
+                pdf.addPage();
+            }
+
+            const startIdx = page * rowsPerPage;
+            const endIdx = Math.min(startIdx + rowsPerPage, transformedData.length);
+            const pageData = transformedData.slice(startIdx, endIdx);
+            const isLastPage = page === totalPages - 1;
+
+            const pageTotal = pageData.reduce((sum, item) => sum + item.total, 0);
+            const pagePending = pageData.reduce((sum, item) => sum + item.pending, 0);
+
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.style.backgroundColor = 'white';
+            wrapperDiv.style.padding = '20px';
+            wrapperDiv.style.width = '1200px';
+            wrapperDiv.style.fontFamily = 'Arial, sans-serif';
+            wrapperDiv.style.color = 'black';
+
+            const headerDiv = document.createElement('div');
+            headerDiv.style.textAlign = 'center';
+            headerDiv.style.marginBottom = '20px';
+            headerDiv.style.padding = '10px';
+            headerDiv.style.borderBottom = '2px solid #1976d2';
+            headerDiv.innerHTML = `
+                <h1 style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #1976d2;">Account Pending Details</h1>
+
+                <p style="margin: 5px 0; font-size: 12px;">Period: ${decodedParams.Fromdate} to ${decodedParams.Todate}</p>
+             
+            `;
+
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+            table.style.fontSize = '10px';
+            table.style.fontFamily = 'Arial, sans-serif';
+
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.style.backgroundColor = '#1976d2';
+            headerRow.style.borderBottom = '2px solid #000';
+
+            const headers = ['#', 'Voucher Number', 'Date', 'Source', 'Pending Days', 'Total (₹)', 'Pending (₹)'];
+            headers.forEach((header, idx) => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                th.style.padding = '8px';
+                th.style.textAlign = (idx === 0 || idx === 1 || idx === 2 || idx === 3) ? 'left' : 'right';
+                th.style.fontWeight = 'bold';
+                th.style.border = '1px solid #ddd';
+                th.style.color = '#fff';
+                th.style.backgroundColor = '#1976d2';
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+
+            pageData.forEach((row, idx) => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #ddd';
+
+                const td1 = document.createElement('td');
+                td1.textContent = (startIdx + idx + 1).toString();
+                td1.style.padding = '6px';
+                td1.style.border = '1px solid #ddd';
+                tr.appendChild(td1);
+
+                const td2 = document.createElement('td');
+                td2.textContent = row.voucherNumber;
+                td2.style.padding = '6px';
+                td2.style.border = '1px solid #ddd';
+                tr.appendChild(td2);
+
+                const td3 = document.createElement('td');
+                td3.textContent = row.formattedDate;
+                td3.style.padding = '6px';
+                td3.style.border = '1px solid #ddd';
+                tr.appendChild(td3);
+
+                const td4 = document.createElement('td');
+                td4.textContent = row.source;
+                td4.style.padding = '6px';
+                td4.style.border = '1px solid #ddd';
+                tr.appendChild(td4);
+
+                const td5 = document.createElement('td');
+                td5.textContent = `${row.pendingDays} days`;
+                td5.style.padding = '6px';
+                td5.style.textAlign = 'right';
+                td5.style.border = '1px solid #ddd';
+                td5.style.color = row.pendingDays > 30 ? '#d32f2f' : row.pendingDays > 15 ? '#ed6c02' : '#2e7d32';
+                td5.style.fontWeight = 'bold';
+                tr.appendChild(td5);
+
+                const td6 = document.createElement('td');
+                td6.textContent = formatAmount(row.total);
+                td6.style.padding = '6px';
+                td6.style.textAlign = 'right';
+                td6.style.border = '1px solid #ddd';
+                tr.appendChild(td6);
+
+                const td7 = document.createElement('td');
+                td7.textContent = formatAmount(row.pending);
+                td7.style.padding = '6px';
+                td7.style.textAlign = 'right';
+                td7.style.border = '1px solid #ddd';
+                td7.style.fontWeight = 'bold';
+                td7.style.color = '#d32f2f';
+                tr.appendChild(td7);
+
+                tbody.appendChild(tr);
+            });
+
+            // Page total row
+            const pageTotalRow = document.createElement('tr');
+            pageTotalRow.style.backgroundColor = '#f5f5f5';
+            pageTotalRow.style.borderTop = '2px solid #1976d2';
+
+            const tdPageLabel = document.createElement('td');
+            tdPageLabel.textContent = `Page Total (${startIdx + 1}-${endIdx})`;
+            tdPageLabel.colSpan = 5;
+            tdPageLabel.style.padding = '6px';
+            tdPageLabel.style.textAlign = 'right';
+            tdPageLabel.style.fontWeight = 'bold';
+            tdPageLabel.style.border = '1px solid #ddd';
+            pageTotalRow.appendChild(tdPageLabel);
+
+            const tdPageTotal = document.createElement('td');
+            tdPageTotal.textContent = formatAmount(pageTotal);
+            tdPageTotal.style.padding = '6px';
+            tdPageTotal.style.textAlign = 'right';
+            tdPageTotal.style.fontWeight = 'bold';
+            tdPageTotal.style.border = '1px solid #ddd';
+            pageTotalRow.appendChild(tdPageTotal);
+
+            const tdPagePending = document.createElement('td');
+            tdPagePending.textContent = formatAmount(pagePending);
+            tdPagePending.style.padding = '6px';
+            tdPagePending.style.textAlign = 'right';
+            tdPagePending.style.fontWeight = 'bold';
+            tdPagePending.style.border = '1px solid #ddd';
+            pageTotalRow.appendChild(tdPagePending);
+
+            tbody.appendChild(pageTotalRow);
+            table.appendChild(tbody);
+            wrapperDiv.appendChild(headerDiv);
+            wrapperDiv.appendChild(table);
+
+
+
+            document.body.appendChild(wrapperDiv);
+
+            try {
+                const canvas = await html2canvas(wrapperDiv, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 280;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                document.body.removeChild(wrapperDiv);
+            } catch (err) {
+                console.error('Error generating page:', err);
+                document.body.removeChild(wrapperDiv);
+                throw err;
+            }
+        }
+
+        pdf.save(`Pending_Bills_${decodedParams.Acc_Id}_${decodedParams.Fromdate}_to_${decodedParams.Todate}.pdf`);
+        toast.success('PDF downloaded successfully!');
+    };
+
+    const downloadAsPDF = async () => {
+        if (!contentRef.current) {
+            toast.error('Content reference not found');
+            return;
+        }
+        setDownloading(true);
+        try {
+            await generatePDF();
+        } catch (err) {
+            console.error('Error generating PDF:', err);
+            toast.error('Failed to generate PDF');
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <Container sx={{ textAlign: 'center', mt: 10 }}>
+                <CircularProgress size={60} />
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                    Loading Pending Bills...
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+                    Decoding parameters and fetching data...
+                </Typography>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </Container>
+        );
+    }
+
+    if (error) {
+        return (
+            <Container sx={{ mt: 4, maxWidth: 600 }}>
+                <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+                <Button variant="contained" onClick={() => window.location.reload()}>
+                    Retry
+                </Button>
+            </Container>
+        );
+    }
+
+    return (
+        <Container maxWidth="lg" sx={{ py: 2 }}>
+            <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                        Account Pending Reference
+                    </Typography>
+
+                    <Tooltip title="Download PDF">
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<DownloadIcon />}
+                            endIcon={<PictureAsPdfIcon />}
+                            onClick={downloadAsPDF}
+                            disabled={transformedData.length === 0 || downloading}
+                            sx={{ textTransform: 'none' }}
+                        >
+                            {downloading ? 'Downloading...' : 'Download PDF'}
+                        </Button>
+                    </Tooltip>
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between', flexWrap: 'wrap', mb: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+
+                        <Chip label={`From: ${decodedParams.Fromdate}`} variant="outlined" size="small" />
+                        <Chip label={`To: ${decodedParams.Todate}`} variant="outlined" size="small" />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip label={`Total: ${formatAmount(totalTotals)}`} color="info" variant="filled" size="small" />
+                        <Chip label={`Pending: ${formatAmount(totalPending)}`} color="error" variant="filled" size="small" />
+                    </Box>
+                </Box>
+
+                <div ref={contentRef} style={{ display: 'none' }} />
+
+                <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow sx={{ backgroundColor: '#1976d2' }}>
+                                <TableCell sx={{ color: '#fff', fontWeight: 700 }}>#</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 700 }}>Voucher Number</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 700 }}>Date</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 700 }}>Source</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 700 }} align="right">Pending Days</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 700 }} align="right">Total (₹)</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 700 }} align="right">Pending (₹)</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {transformedData.map((row, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>{row.voucherNumber}</TableCell>
+                                    <TableCell>{formatDate(row.date)}</TableCell>
+                                    <TableCell>{row.source}</TableCell>
+                                    <TableCell align="right">
+                                        <Chip
+                                            label={`${row.pendingDays} days`}
+                                            size="small"
+                                            color={row.pendingDays > 30 ? "error" : row.pendingDays > 15 ? "warning" : "success"}
+                                            variant="outlined"
+                                        />
+                                    </TableCell>
+                                    <TableCell align="right">{formatAmount(row.total)}</TableCell>
+                                    <TableCell align="right" sx={{ fontWeight: 600, color: '#d32f2f' }}>
+                                        {formatAmount(row.pending)}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                                <TableCell colSpan={5} align="right"><strong>TOTAL:</strong></TableCell>
+                                <TableCell align="right"><strong>{formatAmount(totalTotals)}</strong></TableCell>
+                                <TableCell align="right"><strong>{formatAmount(totalPending)}</strong></TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+        </Container>
+    );
+};
+
+export default Pendingbills;
