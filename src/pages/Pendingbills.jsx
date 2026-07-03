@@ -10,6 +10,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useMediaQuery, useTheme } from '@mui/material';
 
 const CACHE = new Map();
 
@@ -25,7 +26,11 @@ const Pendingbills = () => {
     const [autoDownloadTriggered, setAutoDownloadTriggered] = useState(false);
     const [companyInfo, setCompanyInfo] = useState(null);
 
-    // Calculate pending days
+    
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+
     const calculatePendingDays = (eventDate) => {
         if (!eventDate) return 0;
         const eventDateObj = new Date(eventDate);
@@ -220,6 +225,11 @@ const Pendingbills = () => {
             wrapperDiv.style.fontFamily = 'Arial, sans-serif';
             wrapperDiv.style.color = 'black';
 
+            wrapperDiv.style.position = 'fixed';
+wrapperDiv.style.top = '-10000px';
+wrapperDiv.style.left = '-10000px';
+wrapperDiv.style.zIndex = '-1';
+
             const headerDiv = document.createElement('div');
             headerDiv.style.textAlign = 'center';
             headerDiv.style.marginBottom = '20px';
@@ -234,9 +244,21 @@ const Pendingbills = () => {
 
             const table = document.createElement('table');
             table.style.width = '100%';
+            table.style.tableLayout = 'fixed'; 
             table.style.borderCollapse = 'collapse';
             table.style.fontSize = '10px';
             table.style.fontFamily = 'Arial, sans-serif';
+
+            const colgroup = document.createElement('colgroup');
+            const colWidths = ['4%', '18%', '12%', '30%', '14%', '11%', '11%'];
+            colWidths.forEach((w) => {
+                const col = document.createElement('col');
+                col.style.width = w;
+                colgroup.appendChild(col);
+            });
+            table.appendChild(colgroup);
+
+
 
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
@@ -247,7 +269,7 @@ const Pendingbills = () => {
             headers.forEach((header, idx) => {
                 const th = document.createElement('th');
                 th.textContent = header;
-                th.style.padding = '8px';
+                th.style.padding = '6px 4px';
                 th.style.textAlign = (idx === 0 || idx === 1 || idx === 2 || idx === 3) ? 'left' : 'right';
                 th.style.fontWeight = 'bold';
                 th.style.border = '1px solid #ddd';
@@ -353,27 +375,29 @@ const Pendingbills = () => {
 
 
 
-            document.body.appendChild(wrapperDiv);
+           document.body.appendChild(wrapperDiv);
 
-            try {
-                const canvas = await html2canvas(wrapperDiv, {
-                    scale: 2,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    useCORS: true
-                });
+try {
+    const canvas = await html2canvas(wrapperDiv, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true
+    });
 
-                const imgData = canvas.toDataURL('image/png');
-                const imgWidth = 280;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgData = canvas.toDataURL('image/png');
+    const imgWidth = 280;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-                pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-                document.body.removeChild(wrapperDiv);
-            } catch (err) {
-                console.error('Error generating page:', err);
-                document.body.removeChild(wrapperDiv);
-                throw err;
-            }
+    pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+} catch (err) {
+    console.error('Error generating page:', err);
+    throw err; 
+} finally {
+    if (wrapperDiv.parentNode) {
+        wrapperDiv.parentNode.removeChild(wrapperDiv); 
+    }
+}
         }
 
         pdf.save(`Pending_Bills_${decodedParams.Acc_Id}_${decodedParams.Fromdate}_to_${decodedParams.Todate}.pdf`);
@@ -424,7 +448,7 @@ const Pendingbills = () => {
 
     return (
         <Container maxWidth="lg" sx={{ py: 2 }}>
-            <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
+            <Paper elevation={4} sx={{ p: 2, mb: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: '#1976d2' }}>
                         Account Pending Reference
@@ -445,8 +469,8 @@ const Pendingbills = () => {
                     </Tooltip>
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between', flexWrap: 'wrap', mb: 2 }}>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', mb: 2 }}>
+                    <Box sx={{ display: 'flex',  flexWrap: 'wrap' }}>
 
                         <Chip label={`From: ${decodedParams.Fromdate}`} variant="outlined" size="small" />
                         <Chip label={`To: ${decodedParams.Todate}`} variant="outlined" size="small" />
@@ -456,45 +480,62 @@ const Pendingbills = () => {
                         <Chip label={`Pending: ${formatAmount(totalPending)}`} color="error" variant="filled" size="small" />
                     </Box>
                 </Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+    Total Records: {transformedData.length}
+</Typography>
+
 
                 <div ref={contentRef} style={{ display: 'none' }} />
 
-                <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
+                <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'hidden' }}>
+                        <Table
+        size="small"
+        sx={{
+            tableLayout: 'fixed',
+            width: '100%',
+            '& .MuiTableCell-root': {
+                fontSize: isMobile ? '0.6rem' : '0.875rem',
+                padding: isMobile ? '4px 2px' : '6px 16px',
+                whiteSpace: isMobile ? 'normal' : 'nowrap',
+                wordBreak: 'break-word',
+            },
+        }}
+    >
+        
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#1976d2' }}>
-                                <TableCell sx={{ color: '#fff', fontWeight: 700 }}>#</TableCell>
-                                <TableCell sx={{ color: '#fff', fontWeight: 700 }}>Voucher Number</TableCell>
-                                <TableCell sx={{ color: '#fff', fontWeight: 700 }}>Date</TableCell>
-                                <TableCell sx={{ color: '#fff', fontWeight: 700 }}>Source</TableCell>
-                                <TableCell sx={{ color: '#fff', fontWeight: 700 }} align="right">Pending Days</TableCell>
-                                <TableCell sx={{ color: '#fff', fontWeight: 700 }} align="right">Total (₹)</TableCell>
+                                {/* <TableCell sx={{ color: '#fff', fontWeight: 700 }}>#</TableCell> */}
+                                <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Voucher Number</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Date</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Source</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 800 }} align="right">Total (₹)</TableCell>
                                 <TableCell sx={{ color: '#fff', fontWeight: 700 }} align="right">Pending (₹)</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 500 }} align="right">Pending Days</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {transformedData.map((row, index) => (
                                 <TableRow key={index}>
-                                    <TableCell>{index + 1}</TableCell>
+                                    {/* <TableCell>{index + 1}</TableCell> */}
                                     <TableCell>{row.voucherNumber}</TableCell>
                                     <TableCell>{formatDate(row.date)}</TableCell>
                                     <TableCell>{row.source}</TableCell>
-                                    <TableCell align="right">
+                                    <TableCell align="left">{formatAmount(row.total)}</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 600, color: '#d32f2f', width: '500px', minWidth: '500px' }}>
+    {formatAmount(row.pending)}
+</TableCell>
+                                     <TableCell align="right">
                                         <Chip
-                                            label={`${row.pendingDays} days`}
+                                            label={`${row.pendingDays} `}
                                             size="small"
                                             color={row.pendingDays > 30 ? "error" : row.pendingDays > 15 ? "warning" : "success"}
                                             variant="outlined"
                                         />
                                     </TableCell>
-                                    <TableCell align="right">{formatAmount(row.total)}</TableCell>
-                                    <TableCell align="right" sx={{ fontWeight: 600, color: '#d32f2f' }}>
-                                        {formatAmount(row.pending)}
-                                    </TableCell>
                                 </TableRow>
                             ))}
                             <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                                <TableCell colSpan={5} align="right"><strong>TOTAL:</strong></TableCell>
+                                <TableCell colSpan={4} align="right"><strong>TOTAL:</strong></TableCell>
                                 <TableCell align="right"><strong>{formatAmount(totalTotals)}</strong></TableCell>
                                 <TableCell align="right"><strong>{formatAmount(totalPending)}</strong></TableCell>
                             </TableRow>
