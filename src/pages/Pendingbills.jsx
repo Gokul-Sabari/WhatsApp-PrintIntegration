@@ -75,25 +75,28 @@ const Pendingbills = () => {
             const total = item.totalValue || item.TotalValue || item.Total || item.total || item.Debit_Amt || 0;
             const pending = item.BalanceAmount || item.balanceAmount || item.Pending || item.pending || item.Credit_Amt || 0;
 
-            return {
-                voucherNumber: voucherNumber,
-                date: dateValue,
-                formattedDate: formatDateForPDF(dateValue),
-                source: source,
-                pendingDays: calculatePendingDays(dateValue),
-                total: Number(total) || 0,
-                pending: Number(pending) || 0
-            };
+          return {
+    voucherNumber: voucherNumber,
+    date: dateValue,
+    formattedDate: formatDateForPDF(dateValue),
+    source: source,
+    pendingDays: calculatePendingDays(dateValue),
+    pending: Number(pending) || 0,
+    accountSide: item.accountSide || ""
+};
         });
     };
 
-    // Format amount
-    const formatAmount = (amount) => {
-        const num = Number(amount) || 0;
-        if (num === 0) return "-";
-        return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    };
+ const formatAmount = (amount) => {
+    const num = Number(amount) || 0;
 
+    if (num === 0) return "-";
+
+    return `₹${num.toLocaleString("en-IN", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    })}`;
+};
     useEffect(() => {
         const query = new URLSearchParams(location.search);
         const encodedData = query.get('data');
@@ -178,9 +181,19 @@ const Pendingbills = () => {
     }, [loading, statementData, autoDownloadTriggered]);
 
     const transformedData = transformData(statementData);
-    const totalTotals = transformedData.reduce((sum, item) => sum + item.total, 0);
-    const totalPending = transformedData.reduce((sum, item) => sum + item.pending, 0);
+  const drTotal = transformedData.reduce((sum, item) => {
+    return item.accountSide === "Dr"
+        ? sum + Number(item.pending || 0)
+        : sum;
+}, 0);
 
+const crTotal = transformedData.reduce((sum, item) => {
+    return item.accountSide === "Cr"
+        ? sum + Number(item.pending || 0)
+        : sum;
+}, 0);
+
+const finalTotal = drTotal - crTotal;
     const autoDownloadPDF = async () => {
         if (!contentRef.current || autoDownloadTriggered) return;
         setAutoDownloadTriggered(true);
@@ -216,7 +229,19 @@ const Pendingbills = () => {
             const isLastPage = page === totalPages - 1;
 
             const pageTotal = pageData.reduce((sum, item) => sum + item.total, 0);
-            const pagePending = pageData.reduce((sum, item) => sum + item.pending, 0);
+            const pageDrTotal = pageData.reduce((sum, item) => {
+    return item.accountSide === "Dr"
+        ? sum + Number(item.pending || 0)
+        : sum;
+}, 0);
+
+const pageCrTotal = pageData.reduce((sum, item) => {
+    return item.accountSide === "Cr"
+        ? sum + Number(item.pending || 0)
+        : sum;
+}, 0);
+
+const pageFinalTotal = pageDrTotal - pageCrTotal;
 
             const wrapperDiv = document.createElement('div');
             wrapperDiv.style.backgroundColor = 'white';
@@ -226,9 +251,9 @@ const Pendingbills = () => {
             wrapperDiv.style.color = 'black';
 
             wrapperDiv.style.position = 'fixed';
-wrapperDiv.style.top = '-10000px';
-wrapperDiv.style.left = '-10000px';
-wrapperDiv.style.zIndex = '-1';
+            wrapperDiv.style.top = '-10000px';
+            wrapperDiv.style.left = '-10000px';
+            wrapperDiv.style.zIndex = '-1';
 
             const headerDiv = document.createElement('div');
             headerDiv.style.textAlign = 'center';
@@ -250,7 +275,7 @@ wrapperDiv.style.zIndex = '-1';
             table.style.fontFamily = 'Arial, sans-serif';
 
             const colgroup = document.createElement('colgroup');
-            const colWidths = ['4%', '18%', '12%', '30%', '14%', '11%', '11%'];
+            const colWidths = ['4%', '8%', '5%', '5%', '5%', '5%'];
             colWidths.forEach((w) => {
                 const col = document.createElement('col');
                 col.style.width = w;
@@ -265,7 +290,7 @@ wrapperDiv.style.zIndex = '-1';
             headerRow.style.backgroundColor = '#1976d2';
             headerRow.style.borderBottom = '2px solid #000';
 
-            const headers = ['#', 'Voucher Number', 'Date', 'Source', 'Pending Days', 'Total (₹)', 'Pending (₹)'];
+            const headers = ['#', 'Voucher Number', 'Date', 'Source', 'Pending Days', 'Pending (₹)'];
             headers.forEach((header, idx) => {
                 const th = document.createElement('th');
                 th.textContent = header;
@@ -319,56 +344,53 @@ wrapperDiv.style.zIndex = '-1';
                 td5.style.fontWeight = 'bold';
                 tr.appendChild(td5);
 
-                const td6 = document.createElement('td');
-                td6.textContent = formatAmount(row.total);
-                td6.style.padding = '6px';
-                td6.style.textAlign = 'right';
-                td6.style.border = '1px solid #ddd';
-                tr.appendChild(td6);
+            
 
-                const td7 = document.createElement('td');
-                td7.textContent = formatAmount(row.pending);
-                td7.style.padding = '6px';
-                td7.style.textAlign = 'right';
-                td7.style.border = '1px solid #ddd';
-                td7.style.fontWeight = 'bold';
-                td7.style.color = '#d32f2f';
-                tr.appendChild(td7);
+              const td7 = document.createElement('td');
+td7.textContent = `${formatAmount(row.pending)} ${row.accountSide}`;
+td7.style.padding = '6px';
+td7.style.textAlign = 'right';
+td7.style.border = '1px solid #ddd';
+td7.style.fontWeight = 'bold';
+
+if (row.accountSide === "Cr") {
+    td7.style.color = "#2e7d32";
+    td7.style.backgroundColor = "#e8f5e9";
+} else {
+    td7.style.color = "#d32f2f";
+}
+
+tr.appendChild(td7);
 
                 tbody.appendChild(tr);
             });
 
-            // Page total row
-            const pageTotalRow = document.createElement('tr');
-            pageTotalRow.style.backgroundColor = '#f5f5f5';
-            pageTotalRow.style.borderTop = '2px solid #1976d2';
+          const createTotalRow = (label, value, bgColor = '#f5f5f5') => {
+    const tr = document.createElement('tr');
+    tr.style.backgroundColor = bgColor;
 
-            const tdPageLabel = document.createElement('td');
-            tdPageLabel.textContent = `Page Total (${startIdx + 1}-${endIdx})`;
-            tdPageLabel.colSpan = 5;
-            tdPageLabel.style.padding = '6px';
-            tdPageLabel.style.textAlign = 'right';
-            tdPageLabel.style.fontWeight = 'bold';
-            tdPageLabel.style.border = '1px solid #ddd';
-            pageTotalRow.appendChild(tdPageLabel);
+    const tdLabel = document.createElement('td');
+    tdLabel.colSpan = 5;
+    tdLabel.textContent = label;
+    tdLabel.style.padding = '6px';
+    tdLabel.style.textAlign = 'right';
+    tdLabel.style.fontWeight = 'bold';
+    tdLabel.style.border = '1px solid #ddd';
+    tr.appendChild(tdLabel);
 
-            const tdPageTotal = document.createElement('td');
-            tdPageTotal.textContent = formatAmount(pageTotal);
-            tdPageTotal.style.padding = '6px';
-            tdPageTotal.style.textAlign = 'right';
-            tdPageTotal.style.fontWeight = 'bold';
-            tdPageTotal.style.border = '1px solid #ddd';
-            pageTotalRow.appendChild(tdPageTotal);
+    const tdValue = document.createElement('td');
+    tdValue.textContent = formatAmount(value);
+    tdValue.style.padding = '6px';
+    tdValue.style.textAlign = 'right';
+    tdValue.style.fontWeight = 'bold';
+    tdValue.style.border = '1px solid #ddd';
+    tr.appendChild(tdValue);
 
-            const tdPagePending = document.createElement('td');
-            tdPagePending.textContent = formatAmount(pagePending);
-            tdPagePending.style.padding = '6px';
-            tdPagePending.style.textAlign = 'right';
-            tdPagePending.style.fontWeight = 'bold';
-            tdPagePending.style.border = '1px solid #ddd';
-            pageTotalRow.appendChild(tdPagePending);
+    return tr;
+};
 
-            tbody.appendChild(pageTotalRow);
+
+tbody.appendChild(createTotalRow('TOTAL', pageFinalTotal, '#e3f2fd'));
             table.appendChild(tbody);
             wrapperDiv.appendChild(headerDiv);
             wrapperDiv.appendChild(table);
@@ -475,10 +497,28 @@ try {
                         <Chip label={`From: ${decodedParams.Fromdate}`} variant="outlined" size="small" />
                         <Chip label={`To: ${decodedParams.Todate}`} variant="outlined" size="small" />
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        <Chip label={`Total: ${formatAmount(totalTotals)}`} color="info" variant="filled" size="small" />
-                        <Chip label={`Pending: ${formatAmount(totalPending)}`} color="error" variant="filled" size="small" />
-                    </Box>
+                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+   <Chip
+    label={`DR : ${formatAmount(drTotal)}`}
+    color="success"
+    variant="filled"
+    size="small"
+/>
+
+<Chip
+    label={`CR : ${formatAmount(crTotal)}`}
+    color="warning"
+    variant="filled"
+    size="small"
+/>
+
+<Chip
+    label={`Final : ${formatAmount(finalTotal)}`}
+    color="error"
+    variant="filled"
+    size="small"
+/>
+</Box>
                 </Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
     Total Records: {transformedData.length}
@@ -508,21 +548,36 @@ try {
                                 <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Voucher Number</TableCell>
                                 <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Date</TableCell>
                                 <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Source</TableCell>
-                                <TableCell sx={{ color: '#fff', fontWeight: 800 }} align="right">Total (₹)</TableCell>
+                                {/* <TableCell sx={{ color: '#fff', fontWeight: 800 }} align="right">Total (₹)</TableCell> */}
                                 <TableCell sx={{ color: '#fff', fontWeight: 700 }} align="right">Pending (₹)</TableCell>
                                 <TableCell sx={{ color: '#fff', fontWeight: 500 }} align="right">Pending Days</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {transformedData.map((row, index) => (
-                                <TableRow key={index}>
+                               <TableRow
+    key={index}
+    sx={{
+        backgroundColor:
+            row.accountSide === "Cr" ? "#e8f5e9" : "inherit",
+    }}
+>
                                     {/* <TableCell>{index + 1}</TableCell> */}
                                     <TableCell>{row.voucherNumber}</TableCell>
                                     <TableCell>{formatDate(row.date)}</TableCell>
                                     <TableCell>{row.source}</TableCell>
-                                    <TableCell align="left">{formatAmount(row.total)}</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 600, color: '#d32f2f', width: '500px', minWidth: '500px' }}>
-    {formatAmount(row.pending)}
+                                    {/* <TableCell align="left">{formatAmount(row.total)}</TableCell> */}
+                              <TableCell
+    align="right"
+    sx={{
+        fontWeight: 700,
+        color:
+            row.accountSide === "Cr"
+                ? "#2e7d32"
+                : "#d32f2f",
+    }}
+>
+    {formatAmount(row.pending)} {row.accountSide}
 </TableCell>
                                      <TableCell align="right">
                                         <Chip
@@ -534,11 +589,17 @@ try {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                                <TableCell colSpan={4} align="right"><strong>TOTAL:</strong></TableCell>
-                                <TableCell align="right"><strong>{formatAmount(totalTotals)}</strong></TableCell>
-                                <TableCell align="right"><strong>{formatAmount(totalPending)}</strong></TableCell>
-                            </TableRow>
+           
+
+<TableRow sx={{ backgroundColor: '#e3f2fd' }}>
+    <TableCell colSpan={3} align="right">
+        <strong> TOTAL</strong>
+    </TableCell>
+    <TableCell align="right">
+        <strong>{formatAmount(finalTotal)}</strong>
+    </TableCell>
+    <TableCell />
+</TableRow>
                         </TableBody>
                     </Table>
                 </TableContainer>
