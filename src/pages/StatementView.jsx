@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Container, Paper, Typography, Box, CircularProgress,
   Alert, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Chip, Button, Tooltip
+  TableHead, TableRow, Chip, Button, Tooltip,
+  useMediaQuery, useTheme
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { useLocation } from 'react-router-dom';
@@ -25,13 +26,8 @@ const StatementView = () => {
   const [companyInfo, setCompanyInfo] = useState(null);
   const [companyId, setCompanyId] = useState(null);
 
-  const columns = [
-    { field: "Ledger_Date", header: "Date" },
-    { field: "invoice_no", header: "Invoice No" },
-    { field: "Particulars", header: "Particulars" },
-    { field: "Debit_Amt", header: "Debit (Dr)" },
-    { field: "Credit_Amt", header: "Credit (Cr)" }
-  ];
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // WhatsApp browser detection
   useEffect(() => {
@@ -155,7 +151,7 @@ const StatementView = () => {
   const formatAmount = (amount) => {
     const num = Number(amount) || 0;
     if (num === 0) return "-";
-    return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   const calculateTotals = () => {
@@ -273,12 +269,14 @@ const StatementView = () => {
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip label={`From: ${decodedParams.Fromdate}`} variant="outlined" size="small" />
             <Chip label={`To: ${decodedParams.Todate}`} variant="outlined" size="small" />
-          
           </Box>
-   
         </Box>
 
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          Total Records: {statementData.length}
+        </Typography>
 
+      
         <div style={{ display: 'none' }}>
           <div ref={printRef} style={{
             padding: '20px',
@@ -289,7 +287,6 @@ const StatementView = () => {
             width: '100%',
             boxSizing: 'border-box',
           }}>
-            {/* PDF Header */}
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: '0 0 5px 0', fontSize: 16, fontWeight: 'bold' }}>
                 {companyInfo?.Company_Name || 'Transaction'} - Statement
@@ -299,7 +296,6 @@ const StatementView = () => {
               </p>
             </div>
 
-            {/* PDF Table */}
             <table style={{
               width: '100%',
               borderCollapse: 'collapse',
@@ -344,49 +340,55 @@ const StatementView = () => {
               </tbody>
             </table>
 
-            {/* PDF Footer */}
             <div style={{ textAlign: 'center', marginTop: 20, fontSize: 10, color: '#888' }}>
               This is a Computer Generated Statement
             </div>
           </div>
         </div>
 
-        {/* ── Visible Web Table ── */}
-        <TableContainer
-          component={Paper}
-          variant="outlined"
-          sx={{ overflowX: 'auto' }}
-        >
-          <Table size="small" sx={{ minWidth: 480 }}>
+        {/* ── Visible Web Table — fits screen width, no horizontal scroll ── */}
+        <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'hidden' }}>
+          <Table
+            size="small"
+            sx={{
+              tableLayout: 'fixed',
+              width: '100%',
+              '& .MuiTableCell-root': {
+                fontSize: isMobile ? '0.62rem' : '0.875rem',
+                padding: isMobile ? '4px 3px' : '6px 16px',
+                whiteSpace: isMobile ? 'normal' : 'nowrap',
+                wordBreak: 'break-word',
+              },
+            }}
+          >
             <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>#</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>Invoice No</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', px: { xs: 0.5, sm: 1 } }}>Particulars</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>Debit (Dr)</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>Credit (Cr)</TableCell>
+              <TableRow sx={{ backgroundColor: '#1976d2' }}>
+                <TableCell sx={{ color: '#fff', fontWeight: 700, width: isMobile ? '12%' : '10%' }}>Date</TableCell>
+                <TableCell sx={{ color: '#fff', fontWeight: 700, width: isMobile ? '18%' : '13%' }}>Invoice No</TableCell>
+                <TableCell sx={{ color: '#fff', fontWeight: 700, width: isMobile ? '13%' : '13%' }}>Particulars</TableCell>
+                <TableCell align="right" sx={{ color: '#fff', fontWeight: 700, width: isMobile ? '13%' : '18%' }}>Debit (Dr)</TableCell>
+                <TableCell align="right" sx={{ color: '#fff', fontWeight: 700, width: isMobile ? '13%' : '19%' }}>Credit (Cr)</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {statementData.map((row, index) => (
                 <TableRow key={index}>
-                  <TableCell sx={{ px: { xs: 0.5, sm: 1 } }}>{index + 1}</TableCell>
-                  <TableCell sx={{ whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>{row.Ledger_Date}</TableCell>
-                  <TableCell sx={{ wordBreak: 'break-word', px: { xs: 0.5, sm: 1 } }}>{row.invoice_no}</TableCell>
-                  <TableCell sx={{ wordBreak: 'break-word', px: { xs: 0.5, sm: 1 } }}>{row.Particulars}</TableCell>
-                  <TableCell align="right" sx={{ whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>{formatAmount(row.raw_Debit_Amt)}</TableCell>
-                  <TableCell align="right" sx={{ whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>{formatAmount(row.raw_Credit_Amt)}</TableCell>
+                  <TableCell>{row.Ledger_Date}</TableCell>
+                  <TableCell>{row.invoice_no}</TableCell>
+                  <TableCell>{row.Particulars}</TableCell>
+                  <TableCell align="right">{formatAmount(row.raw_Debit_Amt)}</TableCell>
+                  <TableCell align="right">{formatAmount(row.raw_Credit_Amt)}</TableCell>
                 </TableRow>
               ))}
               <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
-                <TableCell colSpan={4} align="right" sx={{ fontWeight: 'bold', px: { xs: 0.5, sm: 1 } }}>TOTAL:</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>{formatAmount(totalDebit)}</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>{formatAmount(totalCredit)}</TableCell>
+                <TableCell colSpan={2} align="right" sx={{ fontWeight: 700 }}>TOTAL:</TableCell>
+                <TableCell />
+                <TableCell align="right" sx={{ fontWeight: 700 }}>{formatAmount(totalDebit)}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>{formatAmount(totalCredit)}</TableCell>
               </TableRow>
               <TableRow sx={{ backgroundColor: '#e8f4f8' }}>
-                <TableCell colSpan={4} align="right" sx={{ fontWeight: 'bold', px: { xs: 0.5, sm: 1 } }}>NET BALANCE ({balanceType}):</TableCell>
-                <TableCell colSpan={2} align="right" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', px: { xs: 0.5, sm: 1 } }}>{formatAmount(Math.abs(balance))}</TableCell>
+                <TableCell colSpan={3} align="right" sx={{ fontWeight: 700 }}>NET BALANCE ({balanceType}):</TableCell>
+                <TableCell colSpan={2} align="right" sx={{ fontWeight: 700 }}>{formatAmount(Math.abs(balance))}</TableCell>
               </TableRow>
             </TableBody>
           </Table>

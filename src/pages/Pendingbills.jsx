@@ -535,7 +535,7 @@ try {
             width: '100%',
             '& .MuiTableCell-root': {
                 fontSize: isMobile ? '0.6rem' : '0.875rem',
-                padding: isMobile ? '4px 2px' : '6px 16px',
+                padding: isMobile ? '2px 2px' : '6px 16px',
                 whiteSpace: isMobile ? 'normal' : 'nowrap',
                 wordBreak: 'break-word',
             },
@@ -545,7 +545,7 @@ try {
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#1976d2' }}>
                                 {/* <TableCell sx={{ color: '#fff', fontWeight: 700 }}>#</TableCell> */}
-                                <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Voucher Number</TableCell>
+                                <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Voucher</TableCell>
                                 <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Date</TableCell>
                                 <TableCell sx={{ color: '#fff', fontWeight: 800 }}>Source</TableCell>
                                 {/* <TableCell sx={{ color: '#fff', fontWeight: 800 }} align="right">Total (₹)</TableCell> */}

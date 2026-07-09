@@ -909,6 +909,7 @@ export default function DownloadPdfView() {
   const totalIGST    = safeProducts.reduce((s, p) => s + Number(p.Igst_Amo       || 0), 0)
   const totalTax     = totalCGST + totalSGST + totalIGST
   const invoiceTotal = Number(inv.Total_Invoice_value || 0)
+const totalBags = safeProducts.reduce((s, p) => s + Number(p.Bag || 0), 0)
 
   const hsnMap = new Map()
   safeProducts.forEach(p => {
@@ -928,18 +929,18 @@ export default function DownloadPdfView() {
 
   // ✅ Single border styles - no double borders
   const thBase = {
-    padding: '4px 6px',
+     padding: isMobile ? '2px 3px' : '4px 6px',
     backgroundColor: '#f0f0f0',
     fontWeight: 'bold',
-    fontSize: '9px',
+    fontSize: isMobile ? '6px' : '9px',
     whiteSpace: 'nowrap',
     border: '1px solid #000',
     borderCollapse: 'collapse',
     textAlign: 'center',
   }
   const tdBase = {
-    padding: '3px 6px',
-    fontSize: '9px',
+    padding: isMobile ? '2px 2px' : '3px 6px',
+     fontSize: isMobile ? '6px' : '9px',
     border: '1px solid #000',
     borderCollapse: 'collapse',
   }
@@ -1059,83 +1060,78 @@ export default function DownloadPdfView() {
             </div>
           </div>
 
-          {/* ✅ PRODUCT TABLE - Single line borders */}
-          <div style={{ marginBottom: 8, overflowX: 'auto' }}>
-            <table style={{ 
-              width: '100%', 
-              borderCollapse: 'collapse', 
-              minWidth: '700px', 
-              fontSize: '8px',
-              // border: '1px solid #000',
-            }}>
-              <thead>
-                <tr>
-                  <th style={{ ...thBase, width: '25px' }}>Sl</th>
-                  <th style={{ ...thBase, textAlign: 'left', minWidth: '55px' }}>Description of Goods</th>
-                  <th style={{ ...thBase, width: '55px' }}>HSN/SAC</th>
-                  <th style={{ ...thBase, width: '50px' }}>Qty</th>
-                  <th style={{ ...thBase, width: '35px' }}>Bags</th>
-                  <th style={{ ...thBase, width: '65px' }}>Rate (Incl)</th>
-                  <th style={{ ...thBase, width: '65px' }}>Rate (Excl)</th>
-                  <th style={{ ...thBase, width: '30px' }}>Per</th>
-                  <th style={{ ...thBase, width: '65px' }}>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {safeProducts.length > 0 ? safeProducts.map((p, i) => (
-                  <tr key={i}>
-                    <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{i + 1}</td>
-                    <td style={{ ...tdBase, wordBreak: 'break-word', padding: '2px 4px' }}>
-                      {p.Short_Name && p.Short_Name !== '0' && p.Short_Name.trim()
-                        ? p.Short_Name : p.Product_Name}
-                    </td>
-                    <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{p.HSN_Code || '-'}</td>
-                    <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{p.Bill_Qty}</td>
-                    <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{p.Bag || 0}</td>
-                    <td style={{ ...tdBase, textAlign: 'right', padding: '2px 4px' }}>{fmt(p.Rate_Inclusive_Tax)}</td>
-                    <td style={{ ...tdBase, textAlign: 'right', padding: '2px 4px' }}>{fmt(p.Taxable_Rate)}</td>
-                    <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{p.Unit_Name}</td>
-                    <td style={{ ...tdBase, textAlign: 'right', padding: '2px 4px' }}>{fmt(p.Taxable_Amount)}</td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={9} style={{ ...tdBase, textAlign: 'center', padding: '4px' }}>No products found</td>
-                  </tr>
-                )}
 
-                {expenses.map((exp, i) => {
-                  const val = Number(exp.Expence_Value || 0)
-                  return (
-                    <tr key={`exp-${i}`}>
-                      <td style={{ ...tdBase, padding: '2px 4px' }} />
-                      <td style={{ ...tdBase, fontStyle: 'italic', wordBreak: 'break-word', padding: '2px 4px' }}>{exp.Expence_Name}</td>
-                      <td style={{ ...tdBase, padding: '2px 4px' }} />
-                      <td style={{ ...tdBase, padding: '2px 4px' }} />
-                      <td style={{ ...tdBase, padding: '2px 4px' }} />
-                      <td style={{ ...tdBase, padding: '2px 4px' }} />
-                      <td style={{ ...tdBase, padding: '2px 4px' }} />
-                      <td style={{ ...tdBase, padding: '2px 4px' }} />
-                      <td style={{ ...tdBase, textAlign: 'right', color: val < 0 ? 'red' : 'black', padding: '2px 4px' }}>
-                        {fmt(val)}
-                      </td>
-                    </tr>
-                  )
-                })}
+       <div style={{ marginBottom: 8, overflowX: isMobile ? 'visible' : 'auto' }}>
+  <table style={{ 
+    width: '100%', 
+    borderCollapse: 'collapse', 
+    tableLayout: 'fixed',
+    minWidth: isMobile ? '0' : '700px', 
+    fontSize: isMobile ? '6.5px' : '8px',
+  }}>
+    <thead>
+      <tr>
+        <th style={{ ...thBase, width: '25px' }}>Sl</th>
+        <th style={{ ...thBase, width: '100px', wordBreak: 'break-word' }}>Description of Goods</th>
+        <th style={{ ...thBase, width: '45px' }}>HSN/SAC</th>
+        <th style={{ ...thBase, width: '35px' }}>Qty</th>
+        <th style={{ ...thBase, width: '30px' }}>Bags</th> {/* Added Bags column */}
+        <th style={{ ...thBase, width: '45px' }}>Rate (Incl)</th>
+        <th style={{ ...thBase, width: '45px' }}>Rate (Excl)</th>
+        <th style={{ ...thBase, width: '42px' }}>Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {safeProducts.length > 0 ? safeProducts.map((p, i) => (
+        <tr key={i}>
+          <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{i + 1}</td>
+          <td style={{ ...tdBase, wordBreak: 'break-word', padding: '2px 4px' }}>
+            {p.Short_Name && p.Short_Name !== '0' && p.Short_Name.trim()
+              ? p.Short_Name : p.Product_Name}
+          </td>
+          <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{p.HSN_Code || '-'}</td>
+          <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{p.Bill_Qty}</td>
+          <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{p.Bag || 0}</td>
+          <td style={{ ...tdBase, textAlign: 'right', padding: '2px 4px' }}>{fmt(p.Rate_Inclusive_Tax)}</td>
+          <td style={{ ...tdBase, textAlign: 'right', padding: '2px 4px' }}>{fmt(p.Taxable_Rate)}</td>
+          <td style={{ ...tdBase, textAlign: 'right', padding: '2px 4px' }}>{fmt(p.Taxable_Amount)}</td>
+        </tr>
+      )) : (
+        <tr>
+          <td colSpan={9} style={{ ...tdBase, textAlign: 'center', padding: '4px' }}>No products found</td>
+        </tr>
+      )}
 
-                {/* TOTAL ROW */}
-                <tr style={{ backgroundColor: '#f9f9f9', fontWeight: 'bold' }}>
-                  <td style={{ ...tdBase, padding: '2px 4px' }} colSpan={3}>Total</td>
-                  <td style={{ ...tdBase, textAlign: 'right', padding: '2px 4px' }}>{totalQty}</td>
-                  <td style={{ ...tdBase, padding: '2px 4px' }}></td>
-                  <td style={{ ...tdBase, padding: '2px 4px' }}></td>
-                  <td style={{ ...tdBase, padding: '2px 4px' }}></td>
-                  <td style={{ ...tdBase, padding: '2px 4px' }}></td>
-                  <td style={{ ...tdBase, textAlign: 'right', padding: '2px 4px' }}>{fmt(invoiceTotal)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      {expenses.map((exp, i) => {
+        const val = Number(exp.Expence_Value || 0)
+        return (
+          <tr key={`exp-${i}`}>
+            <td style={{ ...tdBase, padding: '2px 4px' }} />
+            <td style={{ ...tdBase, fontStyle: 'italic', wordBreak: 'break-word', padding: '2px 4px' }}>{exp.Expence_Name}</td>
+            <td style={{ ...tdBase, padding: '2px 4px' }} />
+            <td style={{ ...tdBase, padding: '2px 4px' }} />
+            <td style={{ ...tdBase, padding: '2px 4px' }} />
+            <td style={{ ...tdBase, padding: '2px 4px' }} />
+            <td style={{ ...tdBase, padding: '2px 4px' }} />
+            <td style={{ ...tdBase, textAlign: 'right', color: val < 0 ? 'red' : 'black', padding: '2px 4px' }}>
+              {fmt(val)}
+            </td>
+          </tr>
+        )
+      })}
 
+      {/* TOTAL ROW */}
+      <tr style={{ backgroundColor: '#f9f9f9', fontWeight: 'bold' }}>
+        <td style={{ ...tdBase, padding: '2px 4px', textAlign: 'right' }} colSpan={3}>Total</td>
+        <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{totalQty}</td>
+        <td style={{ ...tdBase, textAlign: 'center', padding: '2px 4px' }}>{totalBags}</td>
+        <td style={{ ...tdBase, padding: '2px 4px' }}></td>
+        <td style={{ ...tdBase, padding: '2px 4px' }}></td>
+        <td style={{ ...tdBase, textAlign: 'right', padding: '2px 4px' }}>{fmt(invoiceTotal)}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
       
 
           <div style={{ marginBottom: 8, wordBreak: 'break-word', fontSize: '8px' }}>
@@ -1144,14 +1140,15 @@ export default function DownloadPdfView() {
           </div>
 
           {/* TAX TABLE - Single line borders */}
-          <div style={{ marginBottom: 10, overflowX: 'auto' }}>
-            <table style={{ 
-              width: '100%', 
-              borderCollapse: 'collapse', 
-              minWidth: '550px', 
-              fontSize: '8px',
-              border: '1px solid #000',
-            }}>
+         <div style={{ marginBottom: 10, overflowX: isMobile ? 'visible' : 'auto' }}>
+  <table style={{ 
+    width: '100%', 
+    borderCollapse: 'collapse', 
+    tableLayout: isMobile ? 'fixed' : 'auto',
+    minWidth: isMobile ? '0' : '550px', 
+    fontSize: isMobile ? '6.5px' : '8px',
+    border: '1px solid #000',
+  }}>
               <thead>
                 <tr>
                   <th style={{ ...thBase, width: '60px' }} rowSpan={2}>HSN/SAC</th>
