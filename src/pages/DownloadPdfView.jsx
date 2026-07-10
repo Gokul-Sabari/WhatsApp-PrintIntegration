@@ -773,7 +773,7 @@ export default function DownloadPdfView() {
     if (!loading && !error && invoice) {
       const timer = setTimeout(() => {
         downloadPDF();
-      }, 1000);
+      }, 500);
       
       return () => clearTimeout(timer);
     }
@@ -929,18 +929,18 @@ const totalBags = safeProducts.reduce((s, p) => s + Number(p.Bag || 0), 0)
 
   // ✅ Single border styles - no double borders
   const thBase = {
-     padding: isMobile ? '2px 3px' : '4px 6px',
+     padding: isMobile ? '2px 3px' : '10px 10px',
     backgroundColor: '#f0f0f0',
     fontWeight: 'bold',
-    fontSize: isMobile ? '6px' : '9px',
+    fontSize: isMobile ? '8px' : '9px',
     whiteSpace: 'nowrap',
     border: '1px solid #000',
     borderCollapse: 'collapse',
     textAlign: 'center',
   }
   const tdBase = {
-    padding: isMobile ? '2px 2px' : '3px 6px',
-     fontSize: isMobile ? '6px' : '9px',
+    padding: isMobile ? '2px 2px' : '10px 10px',
+     fontSize: isMobile ? '8px' : '9px',
     border: '1px solid #000',
     borderCollapse: 'collapse',
   }
@@ -1021,7 +1021,7 @@ const totalBags = safeProducts.reduce((s, p) => s + Number(p.Bag || 0), 0)
 
               <div style={{ wordBreak: 'break-word', fontSize: '8px' }}>
                 <strong>Buyer (Bill to)</strong><br />
-                {retailersDetails?.Retailer_Name}<br />
+                {retailersDetails?.retailerTamilName}<br />
                 {retailersDetails?.Reatailer_Address}<br />
                 Phone No: {retailersDetails?.Mobile_No}<br />
                 GSTIN/UIN: {retailersDetails?.Gstno || '-'}<br />
